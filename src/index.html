@@ -53,12 +53,20 @@
       #messages > li:nth-child(odd) {
         background: #efefef;
       }
+
+      #nameRoom {
+        text-align: center;
+      }
     </style>
     <!-- <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script> -->
   </head>
   <body>
+    <h2 id="nameRoom"></h2>
     <ul id="messages"></ul>
     <form id="form" action="">
+      <label for="user">Name</label>
+      <input id="user" autocomplete="off" />
+      <label for="room">Room</label>
       <input id="room" autocomplete="off" />
       <button id="btnJoin">Join</button>
       <button id="btnLeave" disabled>Leave</button>
@@ -70,36 +78,39 @@
     <script>
       var socket = io();
 
-      const ipk = "3.75";
-      console.log(parseFloat(ipk));
-
       var form = document.getElementById("form");
       var input = document.getElementById("input");
       var room = document.getElementById("room");
       var btnJoin = document.getElementById("btnJoin");
       var btnLeave = document.getElementById("btnLeave");
       var messages = document.getElementById("messages");
+      var user = document.getElementById("user");
+      var nameRoom = document.getElementById("nameRoom");
 
       form.addEventListener("submit", function (e) {
         e.preventDefault();
 
-        if (room.value) {
-          socket.emit("joinRoom", room.value);
+        if (room.value && user.value) {
+          socket.emit("joinRoom", room.value, user.value);
+          socket.on("online", (data) => {
+            nameRoom.textContent = `${room.value} online: ${data}`;
+          });
+
           room.disabled = true;
+          user.disabled = true;
           btnJoin.disabled = true;
           input.disabled = false;
           btnLeave.disabled = false;
         }
 
         if (input.value) {
-          socket.emit("chat message", input.value, room.value);
+          socket.emit("chat message", input.value, room.value, user.value);
           input.value = "";
         }
       });
 
       btnLeave.addEventListener("click", function () {
         socket.emit("leaveRoom", room.value);
-        console.log("leave room");
         room.disabled = false;
         btnJoin.disabled = false;
         input.disabled = true;
@@ -110,6 +121,12 @@
         const element = document.querySelectorAll(".msg");
         element.forEach((element) => element.remove());
       });
+
+      // socket.on("disconnect", function () {
+      //   console.log("User disconnected");
+      // });
+
+      // socket.emit("disconnect", room.value);
 
       socket.on("chat message", function (msg) {
         var item = document.createElement("li");
